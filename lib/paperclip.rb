@@ -67,6 +67,10 @@ module Paperclip
       }
     end
 
+    def update_options
+      @options = options.merge(update_options)
+    end
+
     def configure
       yield(self) if block_given?
     end

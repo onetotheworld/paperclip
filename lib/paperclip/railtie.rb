@@ -4,6 +4,14 @@ module Paperclip
   if defined? Rails::Railtie
     require 'rails'
     class Railtie < Rails::Railtie
+      config.paperclip = ActiveSupport::OrderedOptions.new
+
+      initializer "paperclip.configure" do |app|
+        options = app.config.paperclip
+
+        Paperclip::Attachment.default_options.merge!(options)
+      end
+
       initializer 'paperclip.insert_into_active_record' do
         ActiveSupport.on_load :active_record do
           Paperclip::Railtie.insert
