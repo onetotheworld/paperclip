@@ -118,6 +118,14 @@ module Paperclip
         AWS::S3::S3Object.url_for(path(style_name), bucket_name, :expires_in => time, :use_ssl => (s3_protocol(style_name) == 'https'))
       end
 
+      def url(style_name = default_style, use_timestamp = @use_timestamp)
+        if :public_read == (@s3_permissions[style_name.to_sym] || @s3_permissions[:default])
+          super(style_name, use_timestamp)
+        else
+          expiring_url(3600, style_name)
+        end
+      end
+
       def bucket_name
         @bucket
       end
