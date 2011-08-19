@@ -68,28 +68,59 @@ class FogTest < Test::Unit::TestCase
       end
 
       context "without a fog_host" do
-        setup do
-          rebuild_model(@options.merge(:fog_host => nil))
-          @dummy = Dummy.new
-          @dummy.avatar = StringIO.new('.')
-          @dummy.save
+        context "with fog_public true" do
+          setup do
+            rebuild_model(@options.merge(:fog_host => nil, :fog_public => true))
+            @dummy = Dummy.new
+            @dummy.avatar = StringIO.new('.')
+            @dummy.save
+          end
+
+          should "provide a public url" do
+            assert @dummy.avatar.url =~ %r{^https://papercliptests.s3.amazonaws.com/avatars(%2F|/)stringio.txt\?\d+$}, "#{@dummy.avatar.url.inspect} did not match expected"
+          end
         end
 
-        should "provide a public url" do
-          assert !@dummy.avatar.url.nil?
+        context "with fog_public false" do
+          setup do
+            rebuild_model(@options.merge(:fog_host => nil, :fog_public => false))
+            @dummy = Dummy.new
+            @dummy.avatar = StringIO.new('.')
+            @dummy.save
+          end
+
+          should "provide a public url" do
+            assert @dummy.avatar.url =~ %r{^https://s3.amazonaws.com/papercliptests/avatars/stringio.txt\?AWSAccessKeyId=\w+&Signature=\w+&Expires=\d+&\d+$}, "#{@dummy.avatar.url.inspect} did not match expected"
+          end
         end
       end
 
       context "with a fog_host" do
-        setup do
-          rebuild_model(@options.merge(:fog_host => 'http://example.com'))
-          @dummy = Dummy.new
-          @dummy.avatar = StringIO.new('.')
-          @dummy.save
+        context "with fog_public true" do
+          setup do
+            rebuild_model(@options.merge(:fog_host => 'http://example.com', :fog_public => true))
+            @dummy = Dummy.new
+            @dummy.avatar = StringIO.new('.')
+            @dummy.save
+          end
+
+          should "provide a public url" do
+            assert @dummy.avatar.url =~ %r{^http://example\.com/avatars%2Fstringio.txt\?\d+$}, "#{@dummy.avatar.url.inspect} did not match expected"
+          end
         end
 
-        should "provide a public url" do
-          assert @dummy.avatar.url =~ /^http:\/\/example\.com\/avatars\/stringio\.txt\?\d*$/
+        context "with fog_public false" do
+          setup do
+            rebuild_model(@options.merge(:fog_host => 'http://example.com', :fog_public => false))
+            @dummy = Dummy.new
+            @dummy.avatar = StringIO.new('.')
+            @dummy.save
+          end
+
+          should "provide a public url" do
+            # This does not currently work. See lib/paperclip/storage/fog.rb
+            #assert @dummy.avatar.url =~ %r{^http://example\.com/avatars%2Fstringio.txt\?AWSAccessKeyId=\w+&Signature=\w+&Expires=\d+&\d+$}, "#{@dummy.avatar.url.inspect} did not match expected"
+          end
         end
       end
 
@@ -108,11 +139,23 @@ class FogTest < Test::Unit::TestCase
         end
 
         should "provide a public url" do
-          assert @dummy.avatar.url =~ /^http:\/\/img[0123]\.example\.com\/avatars\/stringio\.txt\?\d*$/
+          assert @dummy.avatar.url =~ /^http:\/\/img[0123]\.example\.com\/avatars%2Fstringio\.txt\?\d*$/, "#{@dummy.avatar.url.inspect} did not match expected"
         end
       end
 
     end
 
+    context "when unassigned" do
+      setup do
+        rebuild_model(@options.merge(:default_url => "/:attachment/404.jpg"))
+        @dummy = Dummy.new
+        @dummy.avatar = nil
+        @dummy.save
+      end
+
+      should "be missing URL" do
+        assert_equal %q{/avatars/404.jpg}, @dummy.avatar.url
+      end
+    end
   end
 end
