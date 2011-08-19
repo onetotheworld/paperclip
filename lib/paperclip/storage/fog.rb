@@ -121,7 +121,7 @@ module Paperclip
           if @fog_public
             file.public_url
           else
-            file.url(6.hours)
+            file.url(Time.now + 6.hours)
           end
         end
       end
