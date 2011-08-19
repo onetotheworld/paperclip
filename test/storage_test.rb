@@ -79,6 +79,23 @@ class StorageTest < Test::Unit::TestCase
     end
   end
 
+  context "when URL is a symbol" do
+    setup do
+      AWS::S3::Base.stubs(:establish_connection!)
+      rebuild_model :storage => :s3,
+                    :s3_credentials => {},
+                    :bucket => "bucket",
+                    :path => ":attachment/:basename.:extension",
+                    :url => :s3_path_url
+      @dummy = Dummy.new
+      @dummy.avatar = StringIO.new(".")
+    end
+
+    should "return a url based on an S3 path" do
+      assert_match %r{^http://s3.amazonaws.com/bucket/avatars/stringio.txt}, @dummy.avatar.url
+    end
+  end
+
   context "s3_host_name" do
     setup do
       AWS::S3::Base.stubs(:establish_connection!)
