@@ -129,6 +129,9 @@ module Paperclip
       private
 
       def connection
+        if @connection.nil?
+          Rails.logger.debug("Attempting connection to Fog::Storage using parameters:#{@fog_credentials.inspect}")
+        end
         @connection ||= ::Fog::Storage.new(@fog_credentials)
       end
 
