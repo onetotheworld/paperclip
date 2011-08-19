@@ -44,7 +44,7 @@ module Paperclip
           @fog_directory    = @options[:fog_directory]
           @fog_credentials  = @options[:fog_credentials]
           @fog_host         = @options[:fog_host]
-          @fog_public       = @options[:fog_public] || true
+          @fog_public       = @options.fetch(:fog_public, true)
           @fog_file         = @options[:fog_file] || {}
 
           @url = ':fog_public_url'
@@ -110,10 +110,19 @@ module Paperclip
 
       def public_url(style = default_style)
         if @fog_host
-          host = (@fog_host =~ /%d/) ? @fog_host % (path(style).hash % 4) : @fog_host
-          "#{host}/#{path(style)}"
+          url_host = (@fog_host =~ /%d/) ? @fog_host % (path(style).hash % 4) : @fog_host
+          url_path = ::Fog::AWS.escape(path(style))
+          # if @fog_public is false, this will not work. I couldn't get fog to emit using an arbitrary host.
+          # Basically the problem here is that fog doesn't understand specifying a host.
+          "#{url_host}/#{url_path}"
         else
-          directory.files.new(:key => path(style)).public_url
+          file = directory.files.new(:key => path(style))
+          # This isn't exactly obvious: if paperclip expects public files and they are private, the URL will be nil (that's how public_url works).
+          if @fog_public
+            file.public_url
+          else
+            file.url(6.hours)
+          end
         end
       end
 
